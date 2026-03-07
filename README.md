@@ -1,100 +1,99 @@
 # DEX_total
 
-Multi-exchange data collection and cross-exchange analysis system covering **12 cryptocurrency perpetual futures exchanges**. Generates arbitrage signals with confidence scoring — **signal only, no execution**.
+覆盖 **12 个加密货币永续合约交易所**的多交易所数据采集与跨交易所分析系统。通过置信度评分生成套利信号 — **仅生成信号，不执行交易**。
 
-## Architecture
+## 系统架构
 
 ```
                     ┌─────────────┐
-                    │   main.py   │  Orchestrator
-                    │ Orchestrator│  - 7 concurrent loops
-                    └──────┬──────┘  - Lifecycle management
-                           │         - Signal routing
+                    │   main.py   │  编排器 (Orchestrator)
+                    │   编排器     │  - 7 个并发采集/分析循环
+                    └──────┬──────┘  - 生命周期管理
+                           │         - 信号路由
             ┌──────────────┼──────────────┐
             ▼              ▼              ▼
     ┌──────────────┐ ┌──────────┐ ┌──────────────┐
-    │  Collectors   │ │ Analysis │ │  Monitoring   │
-    │  (12 exch.)   │ │          │ │              │
-    │              │ │ Spread   │ │ Dashboard    │
-    │ Tier 1: CEX  │ │ Correl.  │ │ Telegram     │
-    │ Tier 2: DEX  │ │ Lead-Lag │ │ DataLogger   │
-    │ Tier 3: Beta │ │ Backtest │ │              │
+    │  采集器       │ │  分析层   │ │   监控层      │
+    │  (12 交易所)  │ │          │ │              │
+    │              │ │ 价差矩阵  │ │ 终端仪表盘    │
+    │ Tier 1: CEX  │ │ 相关性   │ │ Telegram     │
+    │ Tier 2: DEX  │ │ 领先滞后  │ │ CSV 日志     │
+    │ Tier 3: Beta │ │ 回测引擎  │ │              │
     │ Tier 4: Stub │ │          │ │              │
     └──────┬───────┘ └────┬─────┘ └──────────────┘
            │              │
            ▼              ▼
     ┌──────────────┐ ┌──────────────┐
-    │  CSV Storage  │ │   Signals    │
-    │ data/YYYYMMDD │ │ (no execut.) │
+    │  CSV 存储     │ │   交易信号    │
+    │ data/YYYYMMDD │ │  (不执行交易)  │
     └──────────────┘ └──────────────┘
 ```
 
-### Data Flow
+### 数据流
 
 ```
-BBO Loop (1s)    ─→ SpreadAnalyzer.update_bbo()
-                    ─→ compute_matrix() → NxN spread matrix
-                    ─→ SignalGenerator.evaluate() → confidence scores
-                    ─→ CSV + Telegram
+BBO 循环 (1s)       ─→ SpreadAnalyzer.update_bbo()
+                       ─→ compute_matrix() → NxN 价差矩阵
+                       ─→ SignalGenerator.evaluate() → 置信度评分
+                       ─→ CSV + Telegram
 
-Trades Loop (5s) ─→ get_recent_trades() → CSV
+交易记录循环 (5s)    ─→ get_recent_trades() → CSV
 
-Funding Loop (60s) ─→ get_funding_rate() → SignalGenerator + CSV
+资金费率循环 (60s)   ─→ get_funding_rate() → SignalGenerator + CSV
 
-OI Loop (30s)    ─→ get_open_interest() → SignalGenerator + CSV
+持仓量循环 (30s)     ─→ get_open_interest() → SignalGenerator + CSV
 
-Analysis (120s)  ─→ CorrelationAnalyzer.compute_correlation_matrix()
-                    ─→ LeadLagAnalyzer.identify_leaders()
-                    ─→ SignalGenerator.set_leader()
+分析循环 (120s)      ─→ CorrelationAnalyzer.compute_correlation_matrix()
+                       ─→ LeadLagAnalyzer.identify_leaders()
+                       ─→ SignalGenerator.set_leader()
 ```
 
-## Quick Start
+## 快速开始
 
-### 1. Install Dependencies
+### 1. 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure API Keys
+### 2. 配置 API 密钥
 ```bash
 cp .env.example .env
-# Edit .env with your API keys (optional — public data works without keys)
+# 编辑 .env 填入你的 API 密钥（可选 — 公开数据不需要密钥即可运行）
 ```
 
-### 3. Run
+### 3. 运行
 ```bash
 python main.py
 ```
 
-## Exchange Coverage
+## 交易所覆盖
 
-| Tier | Exchange | Type | Connection | Data Sources | Status |
-|------|----------|------|-----------|-------------|--------|
-| 1 | Binance | CEX | ccxt unified | OB, Trades, Funding, OI, Liquidations | Production |
-| 1 | OKX | CEX | ccxt unified | OB, Trades, Funding, OI | Production |
-| 1 | Bitget | CEX | ccxt unified | OB, Trades, Funding, OI | Production |
-| 2 | Lighter | DEX | REST + WS | OB, Trades, Funding | Production |
-| 2 | GRVT | DEX | REST (all POST) | OB, Trades, Funding | Production |
-| 2 | Hyperliquid | DEX | REST + WS | OB, Trades, Funding, OI | Production |
-| 3 | Paradex | DEX | REST only | OB, Trades, Funding | Beta |
-| 3 | Aster | DEX | REST only | OB, Trades, Funding | Beta |
-| 3 | EdgeX | DEX | REST only | OB, Trades | Beta |
-| 4 | Variational | DEX | — | — | Stub (no API) |
-| 4 | Nado | DEX | — | — | Stub (no SDK) |
-| 4 | 01.xyz | DEX | — | — | Stub (migrating) |
+| 等级 | 交易所 | 类型 | 连接方式 | 数据源 | 状态 |
+|------|--------|------|---------|--------|------|
+| 1 | Binance | CEX | ccxt 统一接口 | 订单簿, 交易, 资金费率, 持仓量, 清算 | 生产就绪 |
+| 1 | OKX | CEX | ccxt 统一接口 | 订单簿, 交易, 资金费率, 持仓量 | 生产就绪 |
+| 1 | Bitget | CEX | ccxt 统一接口 | 订单簿, 交易, 资金费率, 持仓量 | 生产就绪 |
+| 2 | Lighter | DEX | REST + WS | 订单簿, 交易, 资金费率 | 生产就绪 |
+| 2 | GRVT | DEX | REST (全部 POST) | 订单簿, 交易, 资金费率 | 生产就绪 |
+| 2 | Hyperliquid | DEX | REST + WS | 订单簿, 交易, 资金费率, 持仓量 | 生产就绪 |
+| 3 | Paradex | DEX | 仅 REST | 订单簿, 交易, 资金费率 | Beta |
+| 3 | Aster | DEX | 仅 REST | 订单簿, 交易, 资金费率 | Beta |
+| 3 | EdgeX | DEX | 仅 REST | 订单簿, 交易 | Beta |
+| 4 | Variational | DEX | — | — | 占位 (无 API) |
+| 4 | Nado | DEX | — | — | 占位 (无 SDK) |
+| 4 | 01.xyz | DEX | — | — | 占位 (迁移中) |
 
-### Tier Design
+### 分层设计
 
-- **Tier 1 (CEX)**: Full data via ccxt unified API. ~70% code reuse through `CcxtCollector` base class.
-- **Tier 2 (DEX)**: Custom REST + WebSocket. WS provides real-time BBO with exponential backoff reconnect.
-- **Tier 3 (Beta)**: REST only with graceful degradation (404 → NotImplementedError, not crash).
-- **Tier 4 (Stub)**: Placeholder — always unhealthy, all methods raise NotImplementedError.
+- **Tier 1 (CEX)**: 通过 ccxt 统一 API 获取完整数据。`CcxtCollector` 基类实现约 70% 代码复用。
+- **Tier 2 (DEX)**: 自定义 REST + WebSocket。WS 提供实时 BBO，内置指数退避重连机制。
+- **Tier 3 (Beta)**: 仅 REST，优雅降级（404 → NotImplementedError，不会崩溃）。
+- **Tier 4 (Stub)**: 占位符 — 始终标记为不健康，所有方法抛出 NotImplementedError。
 
-## Configuration
+## 配置说明
 
 ### config/exchanges.yaml
-Controls which exchanges are enabled and their connection parameters.
-API keys are referenced via environment variables (never hardcoded).
+控制启用哪些交易所及其连接参数。API 密钥通过环境变量引用（永远不会硬编码）。
 
 ```yaml
 exchanges:
@@ -102,7 +101,7 @@ exchanges:
     tier: 1
     type: ccxt
     enabled: true
-    api_key_env: BINANCE_API_KEY        # resolved from .env
+    api_key_env: BINANCE_API_KEY        # 从 .env 文件解析
     api_secret_env: BINANCE_API_SECRET
   lighter:
     tier: 2
@@ -113,14 +112,14 @@ exchanges:
 ```
 
 ### config/collection.yaml
-Controls data collection intervals, orderbook depth, and symbol mappings per exchange.
+控制数据采集间隔、订单簿深度和每个交易所的交易对映射。
 
 ```yaml
 intervals:
-  orderbook: 1.0      # BBO snapshot every 1s
-  trades: 5.0          # recent trades every 5s
-  funding: 60.0        # funding rate every 60s
-  open_interest: 30.0  # OI every 30s
+  orderbook: 1.0      # 每 1 秒采集一次 BBO 快照
+  trades: 5.0          # 每 5 秒采集最近交易
+  funding: 60.0        # 每 60 秒采集资金费率
+  open_interest: 30.0  # 每 30 秒采集持仓量
 
 symbol_map:
   binance:
@@ -132,122 +131,120 @@ symbol_map:
 ```
 
 ### config/strategy.yaml
-Controls signal generation weights and thresholds.
+控制信号生成的权重和阈值。
 
 ```yaml
 weights:
-  spread_magnitude: 0.30
-  spread_persistence: 0.20
-  volume_confirmation: 0.15
-  funding_alignment: 0.10
-  lead_lag_signal: 0.15
-  oi_divergence: 0.10
+  spread_magnitude: 0.30     # 价差幅度
+  spread_persistence: 0.20   # 价差持续时间
+  volume_confirmation: 0.15  # 成交量确认
+  funding_alignment: 0.10    # 资金费率对齐
+  lead_lag_signal: 0.15      # 领先-滞后信号
+  oi_divergence: 0.10        # 持仓量背离
 
 signal:
-  min_confidence: 0.3    # only emit signals above this threshold
-  cooldown_s: 5.0         # minimum seconds between signals
-  warmup_ticks: 30        # ticks before generating signals
+  min_confidence: 0.3    # 仅输出高于此阈值的信号
+  cooldown_s: 5.0         # 信号间最小冷却时间（秒）
+  warmup_ticks: 30        # 预热期 tick 数（预热期内不生成信号）
 ```
 
-## Data Output
+## 数据输出
 
-### CSV Structure
+### CSV 目录结构
 ```
 data/
   20260307/
-    bbo_binance.csv          # BBO snapshots (1s intervals)
+    bbo_binance.csv          # BBO 快照（1 秒间隔）
     bbo_okx.csv
     bbo_lighter.csv
-    trades_binance.csv       # Recent trades
-    funding_binance.csv      # Funding rates
-    oi_binance.csv           # Open interest
-    spreads_matrix.csv       # Cross-exchange spread matrix
-    signals_signals.csv      # Generated signals with confidence
+    trades_binance.csv       # 最近交易记录
+    funding_binance.csv      # 资金费率
+    oi_binance.csv           # 持仓量
+    spreads_matrix.csv       # 跨交易所价差矩阵
+    signals_signals.csv      # 生成的信号（含置信度）
 ```
 
-### CSV Schemas
+### CSV 数据格式
 
-**BBO** (`bbo_{exchange}.csv`)
-| Column | Type | Description |
-|--------|------|-------------|
-| timestamp | ISO 8601 | UTC timestamp |
-| exchange | string | Exchange name |
-| symbol | string | Trading pair |
-| bid | decimal | Best bid price |
-| ask | decimal | Best ask price |
-| bid_size | decimal | Best bid size |
-| ask_size | decimal | Best ask size |
+**BBO 数据** (`bbo_{exchange}.csv`)
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| timestamp | ISO 8601 | UTC 时间戳 |
+| exchange | string | 交易所名称 |
+| symbol | string | 交易对 |
+| bid | decimal | 最优买价 |
+| ask | decimal | 最优卖价 |
+| bid_size | decimal | 最优买量 |
+| ask_size | decimal | 最优卖量 |
 
-**Trades** (`trades_{exchange}.csv`)
-| Column | Type | Description |
-|--------|------|-------------|
-| timestamp | ISO 8601 | UTC timestamp |
-| exchange | string | Exchange name |
-| symbol | string | Trading pair |
-| side | string | buy/sell |
-| price | decimal | Trade price |
-| size | decimal | Trade size |
-| trade_id | string | Exchange trade ID |
+**交易记录** (`trades_{exchange}.csv`)
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| timestamp | ISO 8601 | UTC 时间戳 |
+| exchange | string | 交易所名称 |
+| symbol | string | 交易对 |
+| side | string | 买/卖方向 |
+| price | decimal | 成交价格 |
+| size | decimal | 成交数量 |
+| trade_id | string | 交易所交易 ID |
 
-**Signals** (`signals_signals.csv`)
-| Column | Type | Description |
-|--------|------|-------------|
-| timestamp | ISO 8601 | UTC timestamp |
-| buy_exchange | string | Buy side exchange |
-| sell_exchange | string | Sell side exchange |
-| symbol | string | Trading pair |
-| direction | string | e.g. buy@binance_sell@okx |
-| confidence | float | 0-1 confidence score |
-| spread_bps | float | Net spread in basis points |
-| components | string | JSON of component scores |
+**信号数据** (`signals_signals.csv`)
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| timestamp | ISO 8601 | UTC 时间戳 |
+| buy_exchange | string | 买方交易所 |
+| sell_exchange | string | 卖方交易所 |
+| symbol | string | 交易对 |
+| direction | string | 如 buy@binance_sell@okx |
+| confidence | float | 0-1 置信度评分 |
+| spread_bps | float | 净价差（基点） |
+| components | string | 各因子得分 JSON |
 
-## Analysis Tools
+## 分析工具
 
-### Spread Analyzer (`analysis/spread_analyzer.py`)
-Computes NxN cross-exchange spread matrix every BBO tick.
+### 价差分析器 (`analysis/spread_analyzer.py`)
+每次 BBO tick 时计算 NxN 跨交易所价差矩阵。
 
 ```
-For each (buy_exchange, sell_exchange) pair:
-  raw_spread   = sell_bid - buy_ask
-  spread_bps   = raw_spread / midprice * 10000
-  fee_cost     = 2 * fee_estimate_bps (round trip)
-  nat_spread   = avg(natural_spread_buy, natural_spread_sell)
-  net_spread   = spread_bps - fee_cost - nat_spread
+对于每个 (买方交易所, 卖方交易所) 组合：
+  原始价差   = 卖方最优买价 - 买方最优卖价
+  价差基点   = 原始价差 / 中间价 * 10000
+  手续费成本 = 2 * 预估单边费率（往返）
+  自然价差   = avg(买方自然价差, 卖方自然价差)
+  净价差     = 价差基点 - 手续费成本 - 自然价差
 ```
 
-Key features:
-- Stale data filtering (>30s → excluded)
-- Rolling natural spread per exchange (configurable window)
-- Persistence tracking per pair (for signal scoring)
+核心特性：
+- 过期数据过滤（>30 秒 → 排除）
+- 每个交易所的滚动自然价差计算（可配置窗口）
+- 每对交易所的价差持续性追踪（用于信号评分）
 
-### Correlation Analyzer (`analysis/correlation.py`)
-Rolling window cross-correlation between exchange prices using numpy.corrcoef.
-Identifies which exchanges move together and which diverge.
+### 相关性分析器 (`analysis/correlation.py`)
+使用 numpy.corrcoef 在滚动窗口内计算交易所间价格的 Pearson 相关系数。识别哪些交易所价格同步移动，哪些出现背离。
 
 ```python
 from analysis.correlation import CorrelationAnalyzer
 corr = CorrelationAnalyzer(window_size=300)
-# ... feed prices ...
+# ... 持续喂入价格数据 ...
 matrix = corr.compute_correlation_matrix()
 # → {('binance', 'okx'): 0.9987, ('lighter', 'grvt'): 0.9912, ...}
 ```
 
-### Lead-Lag Analyzer (`analysis/lead_lag.py`)
-Detects leader-follower relationships using scipy cross-correlation.
-Identifies which exchanges move first (typically Binance) and the lag in ms.
+### 领先-滞后分析器 (`analysis/lead_lag.py`)
+使用 scipy 互相关检测交易所间的领先-追随关系。识别哪个交易所最先变动（通常是 Binance），以及滞后的毫秒数。
 
 ```python
 from analysis.lead_lag import LeadLagAnalyzer
 ll = LeadLagAnalyzer(window_s=300)
-# ... feed prices ...
+# ... 持续喂入价格数据 ...
 leaders = ll.identify_leaders()
 # → [{'exchange': 'binance', 'lead_count': 5, 'avg_lag_ms': 150.0}, ...]
 ```
 
-The orchestrator runs this every 120s and feeds the leader into SignalGenerator.
+编排器每 120 秒运行一次此分析，并将识别出的领先交易所反馈给 SignalGenerator。
 
-### Backtest Engine (`analysis/backtest_engine.py`)
-Replays historical BBO data through the real pipeline (SpreadAnalyzer → SignalGenerator).
+### 回测引擎 (`analysis/backtest_engine.py`)
+将历史 BBO 数据通过真实管线重放（SpreadAnalyzer → SignalGenerator）。
 
 ```python
 from analysis.backtest_engine import BacktestEngine
@@ -257,10 +254,10 @@ from strategy.signal_generator import SignalGenerator
 engine = BacktestEngine(data_dir="data")
 data = engine.load_bbo_data("20260307", ["binance", "okx", "lighter"])
 
-# Method 1: Custom strategy function
+# 方法一：自定义策略函数
 result = engine.replay(data, my_strategy_fn)
 
-# Method 2: Real pipeline (recommended — matches live exactly)
+# 方法二：真实管线回放（推荐 — 与实盘路径完全一致）
 sa = SpreadAnalyzer(fee_estimate_bps=5.0)
 sg = SignalGenerator(min_confidence=0.3)
 result = engine.replay_with_pipeline(data, sa, sg, symbol="BTC-PERP")
@@ -268,148 +265,146 @@ result = engine.replay_with_pipeline(data, sa, sg, symbol="BTC-PERP")
 print(engine.generate_report(result["stats"]))
 ```
 
-`replay_with_pipeline()` fixes critical P0 issues vs raw `replay()`:
-- Injects historical timestamps (no time.time() collapse)
-- Batches ticks by interval (prevents look-ahead bias)
-- Routes through the same code path as live
+`replay_with_pipeline()` 修复了关键的 P0 问题：
+- 注入历史时间戳（避免 time.time() 坍缩导致所有 tick 同一时间）
+- 按时间间隔分批（防止前瞻偏差 look-ahead bias）
+- 走与实盘完全相同的代码路径
 
-## Signal Generation
+## 信号生成
 
-Signals use **weighted multi-factor confidence scoring** (0-1) instead of hard gates.
-This avoids the "0 trades" problem of binary filtering.
+信号采用 **加权多因子置信度评分**（0-1），而非硬门控过滤。这避免了二元过滤导致的"0 笔交易"问题。
 
-| Factor | Weight | Range | Description |
-|--------|--------|-------|-------------|
-| Spread magnitude | 30% | 0 at 0bps, 1.0 at 20+bps | How large the net spread is |
-| Spread persistence | 20% | 0-1 over 10s window | How long the spread has persisted |
-| Volume confirmation | 15% | 0.5 (placeholder) | Volume supports direction |
-| Funding alignment | 10% | 0-1 from rate differential | Funding rate confirms thesis |
-| Lead-lag signal | 15% | 0.5/0.8 based on leader | Leader exchange moved first |
-| OI divergence | 10% | 0.5-1.0 from OI imbalance | Open interest imbalance |
+| 因子 | 权重 | 范围 | 说明 |
+|------|------|------|------|
+| 价差幅度 | 30% | 0bps→0, 20+bps→1.0 | 净价差的大小 |
+| 价差持续性 | 20% | 10 秒窗口内 0-1 | 价差持续存在的时间 |
+| 成交量确认 | 15% | 0.5（占位符） | 成交量是否支持方向 |
+| 资金费率对齐 | 10% | 费率差 → 0-1 | 资金费率是否确认套利方向 |
+| 领先-滞后信号 | 15% | 基于领先交易所 0.5/0.8 | 领先交易所是否先行变动 |
+| 持仓量背离 | 10% | OI 不平衡 → 0.5-1.0 | 持仓量是否出现跨交易所背离 |
 
-Signals above `min_confidence` (default: 0.3) are emitted to CSV + Telegram.
+置信度高于 `min_confidence`（默认 0.3）的信号会输出到 CSV 和 Telegram。
 
-**Important**: This system generates signals only. Trade execution is handled by
-exchange-specific bots (e.g., grvt_lighter) with proper safety rules (21 golden rules).
+**重要提示**：本系统仅生成信号。交易执行由各交易所专属 bot 负责（如 grvt_lighter），需遵循 21 条安全规则。
 
-## Monitoring
+## 监控
 
-### Terminal Dashboard
-Rich-based live dashboard showing:
-- Exchange connection status (online/offline/WS) with tier classification
-- Real-time BBO across all exchanges
-- Top spreads by net basis points
-- Recent signals with confidence scores
-- System stats (runtime, tick count, signal count)
+### 终端仪表盘
+基于 Rich 的实时终端仪表盘，显示：
+- 交易所连接状态（在线/离线/WS）及等级分类
+- 所有交易所的实时 BBO
+- 按净基点排序的最优价差
+- 最近的信号及置信度评分
+- 系统统计（运行时间、tick 计数、信号计数）
 
-### Telegram Alerts
-Configured via `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` environment variables.
-- Start/stop notifications with exchange list
-- Signal alerts with spread and confidence details
-- Periodic heartbeat (every 5 min)
-- Error/warning notifications
-- WS stale detection alerts
+### Telegram 告警
+通过 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 环境变量配置。
+- 启动/停止通知（附交易所列表）
+- 信号告警（附价差和置信度详情）
+- 定期心跳（每 5 分钟）
+- 错误/警告通知
+- WS 数据过期检测告警
 
-## Safety Rules
+## 安全规则
 
-Critical rules inherited from production arbitrage experience:
+源自生产环境套利交易经验的关键规则：
 
-1. **API failures MUST raise** — never return 0 or default values
-2. **Decimal(str(value)) everywhere** — never float contamination in prices
-3. **WS stale detection** — 30s threshold, fall back to REST automatically
-4. **Auth failures fail-fast** — raise immediately, don't silently continue
-5. **Never abs() on positions** — sign = direction information
-6. **Session cleanup in disconnect()** — close all aiohttp sessions and WS
+1. **API 失败必须抛异常** — 永远不返回 0 或默认值
+2. **全程 Decimal(str(value))** — 价格/数量永远不能用 float 污染
+3. **WS 数据过期检测** — 30 秒阈值，超时自动降级为 REST
+4. **认证失败快速失败** — 立即 raise，不静默继续
+5. **永远不对仓位 size 用 abs()** — 正负号 = 多空方向信息
+6. **disconnect() 清理所有资源** — 关闭全部 aiohttp session 和 WS 连接
 
-## Rust Migration Readiness
+## Rust 迁移准备
 
-The codebase is structured for future Rust migration of hot-path modules:
+代码库已为未来将热路径模块迁移到 Rust 做好结构准备：
 
-### Data Types (`models/data_types.py`)
-All hot-path data structures use `@dataclass` with flat fields:
-- `BBOState`, `SpreadEntry`, `SignalOutput`, `TradeEntry`, `FundingSnapshot`, `OISnapshot`
-- Each maps directly to a Rust struct
-- Serializable via `dataclasses.asdict()` for IPC
+### 数据类型 (`models/data_types.py`)
+所有热路径数据结构使用 `@dataclass`，字段扁平化：
+- `BBOState`、`SpreadEntry`、`SignalOutput`、`TradeEntry`、`FundingSnapshot`、`OISnapshot`
+- 每个 dataclass 直接映射到 Rust struct
+- 通过 `dataclasses.asdict()` 可序列化用于 IPC
 
-### IPC Bridge (`ipc/bridge.py`)
-Abstract `IPCBridge` with three implementations:
-- `InProcessBridge` — current default, zero overhead
-- `UDSBridge` — placeholder for Unix domain socket IPC to Rust
-- `SharedMemoryBridge` — placeholder for zero-copy shared memory
+### IPC 桥接 (`ipc/bridge.py`)
+抽象 `IPCBridge` 接口，三种实现：
+- `InProcessBridge` — 当前默认，零开销，进程内直接调用
+- `UDSBridge` — Unix Domain Socket 占位（用于 Rust 进程通信）
+- `SharedMemoryBridge` — 共享内存占位（用于零拷贝高频数据传输）
 
-### Free WS Parsers (`collectors/ws_parsers.py`)
-WS message parsing extracted to pure functions (no `self` dependency):
+### 独立 WS 解析器 (`collectors/ws_parsers.py`)
+WS 消息解析提取为纯函数（无 `self` 依赖，可直接移植到 Rust）：
 - `parse_lighter_orderbook(msg)` → `(best_bid, best_ask)`
 - `parse_hyperliquid_l2book(msg)` → `(best_bid, best_ask)`
 - `parse_generic_orderbook(msg)` → `(best_bid, best_ask)`
 
-These map directly to Rust functions: `fn parse_lighter_orderbook(msg: &Value) -> Option<(Decimal, Decimal)>`
+对应 Rust 函数签名：`fn parse_lighter_orderbook(msg: &Value) -> Option<(Decimal, Decimal)>`
 
-## Project Structure
+## 项目结构
 
 ```
 DEX_total/
-├── config/                  # YAML configs + loader
-│   ├── exchanges.yaml       # Exchange configs (API keys via env vars)
-│   ├── collection.yaml      # Intervals, depth, symbol mappings
-│   ├── strategy.yaml        # Signal weights and thresholds
-│   └── loader.py            # YAML loading + env var resolution
-├── collectors/              # 12 exchange collectors
-│   ├── base_collector.py    # Abstract base class (ABC)
-│   ├── ccxt_collector.py    # Unified CEX base (Binance/OKX/Bitget)
-│   ├── binance_collector.py # Binance-specific (liquidations, mark price)
-│   ├── okx_collector.py     # OKX-specific (passphrase)
-│   ├── bitget_collector.py  # Bitget-specific (product type)
+├── config/                  # YAML 配置 + 加载器
+│   ├── exchanges.yaml       # 交易所配置（API 密钥通过环境变量引用）
+│   ├── collection.yaml      # 采集间隔、深度、交易对映射
+│   ├── strategy.yaml        # 信号权重和阈值
+│   └── loader.py            # YAML 加载 + 环境变量解析
+├── collectors/              # 12 个交易所采集器
+│   ├── base_collector.py    # 抽象基类 (ABC)
+│   ├── ccxt_collector.py    # CEX 统一基类 (Binance/OKX/Bitget)
+│   ├── binance_collector.py # Binance 特有（清算数据、标记价格）
+│   ├── okx_collector.py     # OKX 特有（passphrase）
+│   ├── bitget_collector.py  # Bitget 特有（产品类型）
 │   ├── lighter_collector.py # Lighter DEX — REST + WS
-│   ├── grvt_collector.py    # GRVT DEX — REST only (all POST)
+│   ├── grvt_collector.py    # GRVT DEX — 仅 REST（全部 POST）
 │   ├── hyperliquid_collector.py  # Hyperliquid — REST + WS
 │   ├── paradex_collector.py # Paradex — REST (Tier 3)
 │   ├── aster_collector.py   # Aster — REST (Tier 3, beta)
 │   ├── edgex_collector.py   # EdgeX — REST (Tier 3, beta)
-│   ├── ws_parsers.py        # Free WS parsing functions (Rust-ready)
-│   └── stubs/               # Tier 4 placeholders
+│   ├── ws_parsers.py        # 独立 WS 解析函数（Rust 就绪）
+│   └── stubs/               # Tier 4 占位符
 │       ├── variational_stub.py
 │       ├── nado_stub.py
 │       └── o1_stub.py
-├── analysis/                # Analysis tools
-│   ├── spread_analyzer.py   # NxN cross-exchange spread matrix
-│   ├── correlation.py       # Rolling price correlation (numpy)
-│   ├── lead_lag.py          # Leader-follower detection (scipy)
-│   └── backtest_engine.py   # Historical BBO replay
-├── strategy/                # Signal generation
-│   ├── signal_generator.py  # Multi-factor confidence scoring
-│   └── execution_engine.py  # STUB — no real execution
-├── models/                  # Rust-migration-ready data types
-│   └── data_types.py        # @dataclass for all hot-path structs
-├── ipc/                     # Inter-process communication bridge
-│   └── bridge.py            # InProcess / UDS / SharedMemory bridges
-├── monitoring/              # Dashboard + alerts
-│   ├── dashboard.py         # Rich terminal live UI
-│   ├── alerts.py            # Telegram notifications (6 types)
-│   └── data_logger.py       # CSV writer (daily rotation, flush-safe)
-├── tests/                   # Test suite
+├── analysis/                # 分析工具
+│   ├── spread_analyzer.py   # NxN 跨交易所价差矩阵
+│   ├── correlation.py       # 滚动价格相关性 (numpy)
+│   ├── lead_lag.py          # 领先-追随检测 (scipy)
+│   └── backtest_engine.py   # 历史 BBO 回放
+├── strategy/                # 信号生成
+│   ├── signal_generator.py  # 多因子置信度评分
+│   └── execution_engine.py  # 占位 — 不执行实际交易
+├── models/                  # Rust 迁移就绪的数据类型
+│   └── data_types.py        # 所有热路径结构的 @dataclass
+├── ipc/                     # 进程间通信桥接
+│   └── bridge.py            # InProcess / UDS / SharedMemory 三种实现
+├── monitoring/              # 仪表盘 + 告警
+│   ├── dashboard.py         # Rich 终端实时 UI
+│   ├── alerts.py            # Telegram 通知（6 种类型）
+│   └── data_logger.py       # CSV 写入（按日轮转、flush 安全）
+├── tests/                   # 测试套件
 │   ├── test_base_collector.py
 │   ├── test_spread_analyzer.py
 │   └── test_ccxt_collector.py
-├── data/                    # CSV output (auto-created, daily rotation)
-├── logs/                    # Log files (auto-created)
-├── main.py                  # Entry point — Orchestrator
-├── requirements.txt         # Python dependencies
-├── .env.example             # Template for API keys
+├── data/                    # CSV 输出（自动创建、按日轮转）
+├── logs/                    # 日志文件（自动创建）
+├── main.py                  # 入口 — 编排器
+├── requirements.txt         # Python 依赖
+├── .env.example             # API 密钥模板
 ├── .gitignore
-└── CLAUDE.md                # Claude Code project instructions
+└── CLAUDE.md                # Claude Code 项目指令
 ```
 
-**Total**: ~5,500 lines across 40 Python files
+**总量**: 40 个 Python 文件，约 6,500 行代码
 
-## Development
+## 开发指南
 
-### Run Tests
+### 运行测试
 ```bash
 pytest tests/ -v
 ```
 
-### Validate All Syntax
+### 语法验证（全部文件）
 ```bash
 python -c "
 import ast, os
@@ -421,28 +416,28 @@ print('All files valid')
 "
 ```
 
-### Add a New Exchange
-1. Create `collectors/new_exchange_collector.py`
-2. Inherit from `BaseCollector`
-3. Implement `connect()`, `disconnect()`, `get_orderbook()`, `get_ticker()`
-4. Optionally implement `get_recent_trades()`, `get_funding_rate()`, `get_open_interest()`
-5. Add config entry in `config/exchanges.yaml`
-6. Add symbol mapping in `config/collection.yaml`
-7. Add factory lambda in `main.py` `COLLECTOR_MAP`
-8. Run `ast.parse()` validation
+### 添加新交易所
+1. 创建 `collectors/新交易所_collector.py`
+2. 继承 `BaseCollector`
+3. 实现 `connect()`、`disconnect()`、`get_orderbook()`、`get_ticker()`
+4. 可选实现 `get_recent_trades()`、`get_funding_rate()`、`get_open_interest()`
+5. 在 `config/exchanges.yaml` 添加配置
+6. 在 `config/collection.yaml` 添加交易对映射
+7. 在 `main.py` 的 `COLLECTOR_MAP` 中添加工厂 lambda
+8. 运行 `ast.parse()` 验证通过
 
-### Storage Estimate
-- BBO (1s): ~5 KB/exchange/hour → ~120 KB/day/exchange
-- With 9 active exchanges + trades + signals: ~107 MB/day
-- Monthly: ~3.2 GB (easily manageable with CSV)
+### 存储空间估算
+- BBO (1 秒/次): 约 5 KB/交易所/小时 → 约 120 KB/天/交易所
+- 9 个活跃交易所 + 交易记录 + 信号: 约 107 MB/天
+- 月度: 约 3.2 GB（CSV 完全可以胜任）
 
-## Design Decisions
+## 设计决策
 
-| Decision | Rationale |
-|----------|-----------|
-| Signal != Execution | Each exchange has unique safety rules (21 golden rules). Generic execution is dangerous. |
-| Confidence scoring, not hard gates | Binary filtering causes "0 trades" problem. Weighted scoring is tunable. |
-| CSV storage | Simple, grep-able, pandas-readable. No DB overhead for research system. |
-| ccxt base for CEX | 70% code reuse across Binance/OKX/Bitget. Only exchange-specific quirks overridden. |
-| Stubs for Tier 4 | Variational/Nado/01.xyz have no usable API. Stubs prevent crashes without fake data. |
-| Dataclasses for data types | Flat FFI-friendly layout. Maps directly to Rust structs for future migration. |
+| 决策 | 原因 |
+|------|------|
+| 信号与执行分离 | 每个交易所有独特的安全规则（21 条黄金规则）。通用执行引擎是危险的。 |
+| 置信度评分而非硬门控 | 二元过滤会导致"0 笔交易"问题。加权评分可调可控。 |
+| CSV 存储 | 简单、可 grep、pandas 直接读取。研究系统不需要数据库开销。 |
+| ccxt 统一 CEX 基座 | Binance/OKX/Bitget 代码复用约 70%。只覆写交易所特有差异。 |
+| Tier 4 使用占位符 | Variational/Nado/01.xyz 无可用 API。占位符防止崩溃，不生成假数据。 |
+| @dataclass 数据类型 | 扁平 FFI 友好的布局。可直接映射为 Rust struct，为未来迁移做准备。 |
