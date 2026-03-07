@@ -1,0 +1,101 @@
+# Exchange Configuration
+# API keys are loaded from environment variables (never hardcode!)
+
+exchanges:
+  # --- Tier 1: CEX via ccxt ---
+  binance:
+    tier: 1
+    type: ccxt
+    ccxt_id: binanceusdm
+    enabled: true
+    api_key_env: BINANCE_API_KEY
+    api_secret_env: BINANCE_API_SECRET
+    options:
+      defaultType: future
+      sandboxMode: false
+
+  okx:
+    tier: 1
+    type: ccxt
+    ccxt_id: okx
+    enabled: true
+    api_key_env: OKX_API_KEY
+    api_secret_env: OKX_API_SECRET
+    passphrase_env: OKX_PASSPHRASE
+    options:
+      defaultType: swap
+
+  bitget:
+    tier: 1
+    type: ccxt
+    ccxt_id: bitget
+    enabled: true
+    api_key_env: BITGET_API_KEY
+    api_secret_env: BITGET_API_SECRET
+    passphrase_env: BITGET_PASSPHRASE
+    options:
+      defaultType: swap
+
+  # --- Tier 2: DEX with SDK ---
+  lighter:
+    tier: 2
+    type: custom
+    enabled: true
+    private_key_env: LIGHTER_PRIVATE_KEY
+    rest_url: https://mainnet.lighter.xyz
+    ws_url: wss://mainnet.lighter.xyz/ws
+
+  grvt:
+    tier: 2
+    type: custom
+    enabled: true
+    private_key_env: GRVT_PRIVATE_KEY
+    api_key_env: GRVT_API_KEY
+    rest_url: https://edge.grvt.io
+    ws_url: wss://edge.grvt.io/ws
+
+  hyperliquid:
+    tier: 2
+    type: custom
+    enabled: true
+    private_key_env: HYPERLIQUID_PRIVATE_KEY
+    rest_url: https://api.hyperliquid.xyz
+    ws_url: wss://api.hyperliquid.xyz/ws
+
+  # --- Tier 3: DEX REST only ---
+  paradex:
+    tier: 3
+    type: rest
+    enabled: true
+    api_key_env: PARADEX_API_KEY
+    rest_url: https://api.paradex.trade/v1
+
+  aster:
+    tier: 3
+    type: rest
+    enabled: true
+    api_key_env: ASTER_API_KEY
+    rest_url: https://api.aster.finance
+
+  edgex:
+    tier: 3
+    type: rest
+    enabled: true
+    api_key_env: EDGEX_API_KEY
+    rest_url: https://api.edgex.exchange
+
+  # --- Tier 4: Stubs ---
+  variational:
+    tier: 4
+    type: stub
+    enabled: false
+
+  nado:
+    tier: 4
+    type: stub
+    enabled: false
+
+  o1xyz:
+    tier: 4
+    type: stub
+    enabled: false

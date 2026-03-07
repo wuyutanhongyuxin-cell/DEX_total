@@ -1,0 +1,53 @@
+# Data Collection Configuration
+
+symbols:
+  - BTC-PERP     # normalized symbol, mapped per exchange
+
+# Symbol mapping per exchange (exchange-specific format)
+symbol_map:
+  binance:
+    BTC-PERP: BTC/USDT:USDT
+  okx:
+    BTC-PERP: BTC/USDT:USDT
+  bitget:
+    BTC-PERP: BTC/USDT:USDT
+  lighter:
+    BTC-PERP: BTCUSDC_Perp
+  grvt:
+    BTC-PERP: BTC_USDT_Perp
+  hyperliquid:
+    BTC-PERP: BTC
+  paradex:
+    BTC-PERP: BTC-USD-PERP
+  aster:
+    BTC-PERP: BTC-PERP
+  edgex:
+    BTC-PERP: BTC-USDC
+
+# Collection intervals (seconds)
+intervals:
+  orderbook: 1.0          # BBO snapshot every 1s
+  trades: 5.0             # recent trades every 5s
+  funding: 60.0           # funding rate every 60s
+  open_interest: 30.0     # OI every 30s
+  klines: 60.0            # 1m candles every 60s
+  liquidations: 10.0      # liquidations every 10s
+
+# Orderbook depth
+orderbook_depth:
+  tier1: 20               # CEX: full 20 levels
+  tier2: 10               # DEX SDK: 10 levels
+  tier3: 5                # DEX REST: 5 levels
+
+# WS settings
+ws:
+  stale_threshold_s: 30   # mark WS stale after 30s no update
+  reconnect_base_delay: 1.0
+  reconnect_max_delay: 64.0
+  ping_interval: 20
+
+# CSV output
+csv:
+  base_dir: data
+  flush_after_write: true
+  rotate_daily: true

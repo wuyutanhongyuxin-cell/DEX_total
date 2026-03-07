@@ -1,0 +1,25 @@
+# Environment
+.env
+*.pem
+*.key
+
+# Data
+data/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

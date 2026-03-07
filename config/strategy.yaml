@@ -1,0 +1,37 @@
+# Strategy & Signal Configuration
+
+# Signal generation (confidence scoring, NOT hard gates)
+signal:
+  warmup_ticks: 30          # minimum BBO ticks before generating signals
+  min_confidence: 0.3       # minimum confidence score to emit signal (0-1)
+  cooldown_s: 5.0           # seconds between consecutive signals
+
+# Confidence scoring weights (sum = 1.0)
+weights:
+  spread_magnitude: 0.30    # how large the spread is
+  spread_persistence: 0.20  # how long the spread has persisted
+  volume_confirmation: 0.15 # volume supports the direction
+  funding_alignment: 0.10   # funding rate supports the direction
+  lead_lag_signal: 0.15     # leader exchange moved first
+  oi_divergence: 0.10       # OI change supports thesis
+
+# Spread analysis
+spread:
+  fee_estimate_bps: 5.0     # default fee estimate (basis points)
+  natural_spread_window: 60 # seconds to compute natural spread
+  persistence_threshold_s: 2.0  # spread must persist N seconds
+
+# Lead-lag analysis
+lead_lag:
+  window_s: 300             # 5-minute rolling window
+  min_correlation: 0.7      # minimum correlation to identify leader
+  lag_bins_ms: [50, 100, 200, 500, 1000]  # lag bins for analysis
+
+# Monitoring
+monitoring:
+  dashboard_refresh_ms: 500  # Rich dashboard refresh rate
+  heartbeat_interval_s: 300  # Telegram heartbeat every 5 min
+  alert_levels:
+    info: true
+    warning: true
+    critical: true
