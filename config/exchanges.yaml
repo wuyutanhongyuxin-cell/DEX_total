@@ -84,18 +84,24 @@ exchanges:
     api_key_env: EDGEX_API_KEY
     rest_url: https://api.edgex.exchange
 
-  # --- Tier 4: Stubs ---
-  variational:
-    tier: 4
-    type: stub
-    enabled: false
-
+  # --- Tier 2: DEX REST + WS ---
   nado:
-    tier: 4
-    type: stub
-    enabled: false
+    tier: 2
+    type: custom
+    enabled: true
+    rest_url: https://gateway.prod.nado.xyz
+    archive_url: https://archive.prod.nado.xyz
+    ws_url: wss://gateway.prod.nado.xyz/v1/subscribe
+
+  # --- Tier 3: DEX REST only (limited API) ---
+  variational:
+    tier: 3
+    type: rest
+    enabled: true
+    rest_url: https://omni-client-api.prod.ap-northeast-1.variational.io
 
   o1xyz:
-    tier: 4
-    type: stub
-    enabled: false
+    tier: 3
+    type: rest
+    enabled: true
+    rest_url: https://zo-mainnet.n1.xyz

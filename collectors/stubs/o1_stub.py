@@ -1,9 +1,18 @@
 """
-O1Stub — Stub collector for 01.xyz DEX.
+O1Stub — DEPRECATED stub collector for 01.xyz DEX.
 
-01.xyz is undergoing a chain migration and its API is not currently stable.
-This stub exists so the system can register 01 as a known exchange
-without crashing. All data methods raise NotImplementedError.
+THIS FILE IS SUPERSEDED by collectors/o1_collector.py (Tier 3).
+
+The full O1Collector implementation lives at:
+    collectors/o1_collector.py
+
+main.py COLLECTOR_MAP now uses O1Collector directly.
+This stub is retained only for import compatibility — do not use it
+for new code. It will be removed in a future cleanup pass.
+
+Original context: 01.xyz was undergoing a chain migration; the stub was
+created as a placeholder. The migration is complete and the public REST
+API at https://zo-mainnet.n1.xyz is now accessible.
 """
 
 import logging
@@ -14,13 +23,17 @@ logger = logging.getLogger(__name__)
 
 
 class O1Stub(BaseCollector):
-    """Stub collector for 01.xyz (chain migration in progress)."""
+    """DEPRECATED — use collectors.o1_collector.O1Collector instead."""
 
     def __init__(self):
-        super().__init__(name="o1", tier=4)
+        super().__init__(name="o1_stub_deprecated", tier=4)
+        logger.warning(
+            "[o1_stub] O1Stub is deprecated. "
+            "Use collectors.o1_collector.O1Collector (Tier 3) instead."
+        )
 
     async def connect(self) -> None:
-        logger.info("[o1] 01.xyz: chain migration in progress")
+        logger.warning("[o1_stub] O1Stub.connect() — no-op; use O1Collector")
         self._connected = False
 
     async def disconnect(self) -> None:
@@ -30,7 +43,11 @@ class O1Stub(BaseCollector):
         return False
 
     async def get_orderbook(self, symbol: str, depth: int = 20) -> dict:
-        raise NotImplementedError("01.xyz: chain migration in progress — orderbook not accessible")
+        raise NotImplementedError(
+            "O1Stub is deprecated — use collectors.o1_collector.O1Collector"
+        )
 
     async def get_ticker(self, symbol: str) -> dict:
-        raise NotImplementedError("01.xyz: chain migration in progress — ticker not accessible")
+        raise NotImplementedError(
+            "O1Stub is deprecated — use collectors.o1_collector.O1Collector"
+        )

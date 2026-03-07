@@ -129,3 +129,52 @@ def parse_generic_orderbook(msg: dict) -> Optional[tuple[Decimal, Decimal]]:
         return best_bid, best_ask
     except (IndexError, KeyError, ValueError):
         return None
+
+
+def parse_nado_bbo(msg: dict) -> Optional[tuple[Decimal, Decimal]]:
+    """Parse Nado WS best_bid_offer message → (best_bid, best_ask) or None.
+
+    Nado WS BBO format (gateway v1/subscribe):
+    {
+        "type": "best_bid_offer",
+        "product_id": 2,
+        "bid_price": "95000.50",
+        "bid_size": "1.5",
+        "ask_price": "95001.00",
+        "ask_size": "0.8",
+        "timestamp": 1700000000000
+    }
+
+    May also appear nested under "data":
+    {"data": {"bid_price": ..., "ask_price": ..., ...}}
+
+    Returns None if message type is not best_bid_offer or missing bid/ask.
+    """
+    # Accept top-level or data-wrapped message
+    payload = msg if "bid_price" in msg or "ask_price" in msg else msg.get("data", msg)
+
+    # Filter by message type if present — skip subscription acks
+    msg_type = msg.get("type", payload.get("type", ""))
+    if msg_type and msg_type not in ("best_bid_offer", "bbo", ""):
+        return None
+
+    bid_raw = payload.get("bid_price", payload.get("bid"))
+    ask_raw = payload.get("ask_price", payload.get("ask"))
+
+    if bid_raw is None or ask_raw is None:
+        return None
+
+    try:
+        best_bid = Decimal(str(bid_raw))
+        best_ask = Decimal(str(ask_raw))
+    except Exception:
+        return None
+
+    if best_bid <= 0 or best_ask <= 0:
+        return None
+
+    # Reject crossed market (bid >= ask) — indicates data error
+    if best_bid >= best_ask:
+        return None
+
+    return best_bid, best_ask

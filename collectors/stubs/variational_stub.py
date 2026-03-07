@@ -1,9 +1,17 @@
 """
 VariationalStub — Stub collector for Variational DEX.
 
-Variational does not have a public trading API available.
-This stub exists so the system can register Variational as a known exchange
-without crashing. All data methods raise NotImplementedError.
+DEPRECATED: This stub has been superseded by VariationalCollector (Tier 3).
+
+  New implementation: collectors/variational_collector.py
+  Replaced on: 2026-03-08
+  Reason: Variational exposes a public REST API at
+    https://omni-client-api.prod.ap-northeast-1.variational.io
+    which does not require authentication and bypasses Cloudflare.
+    The real collector uses GET /metadata/stats for BBO data.
+
+This file is retained for reference only. main.py now imports and uses
+VariationalCollector directly. Do not use VariationalStub in production.
 """
 
 import logging

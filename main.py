@@ -41,9 +41,9 @@ from collectors.hyperliquid_collector import HyperliquidCollector
 from collectors.paradex_collector import ParadexCollector
 from collectors.aster_collector import AsterCollector
 from collectors.edgex_collector import EdgeXCollector
-from collectors.stubs.variational_stub import VariationalStub
-from collectors.stubs.nado_stub import NadoStub
-from collectors.stubs.o1_stub import O1Stub
+from collectors.variational_collector import VariationalCollector
+from collectors.nado_collector import NadoCollector
+from collectors.o1_collector import O1Collector
 
 # Logging setup
 LOG_DIR = Path("logs")
@@ -96,9 +96,17 @@ COLLECTOR_MAP = {
     "edgex": lambda cfg: EdgeXCollector(
         rest_url=cfg.get("rest_url", "https://api.edgex.exchange"),
     ),
-    "variational": lambda cfg: VariationalStub(),
-    "nado": lambda cfg: NadoStub(),
-    "o1xyz": lambda cfg: O1Stub(),
+    "variational": lambda cfg: VariationalCollector(
+        rest_url=cfg.get("rest_url", "https://omni-client-api.prod.ap-northeast-1.variational.io"),
+    ),
+    "nado": lambda cfg: NadoCollector(
+        rest_url=cfg.get("rest_url", "https://gateway.prod.nado.xyz"),
+        archive_url=cfg.get("archive_url", "https://archive.prod.nado.xyz"),
+        ws_url=cfg.get("ws_url", "wss://gateway.prod.nado.xyz/v1/subscribe"),
+    ),
+    "o1xyz": lambda cfg: O1Collector(
+        rest_url=cfg.get("rest_url", "https://zo-mainnet.n1.xyz"),
+    ),
 }
 
 

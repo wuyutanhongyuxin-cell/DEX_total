@@ -25,8 +25,10 @@ Collectors (12) → DataLogger (CSV) → Analysis (spread/corr/lead-lag) → Sig
 - **GRVT**: All endpoints are POST, not GET. Prices must align to tick_size.
 - **Lighter**: Position has separate `sign` field. IOC = ORDER_TYPE_MARKET(1).
 - **Hyperliquid**: Single POST endpoint for all queries. Use `type` field to select.
-- **Tier 3 (Paradex/Aster/EdgeX)**: Graceful degradation — log + re-raise, don't crash.
-- **Tier 4 (Variational/Nado/01)**: Stubs only, always return NotImplementedError.
+- **Nado (Tier 2)**: V1 endpoints use 1e18 fixed-point, V2 use floats. WS requires 30s ping.
+- **Variational (Tier 3)**: Public backend bypasses Cloudflare. BBO only (no depth). Size=None in orderbook.
+- **01.xyz (Tier 3)**: No WS, no funding/OI/trades. Symbol resolution via /info market metadata.
+- **Tier 3 (Paradex/Aster/EdgeX/Variational/01.xyz)**: Graceful degradation — log + re-raise, don't crash.
 
 ## Key File Paths
 
@@ -74,9 +76,8 @@ data/YYYYMMDD/
 | Tier | Exchanges | Connection | Status |
 |------|-----------|------------|--------|
 | 1 | Binance, OKX, Bitget | ccxt unified | Production |
-| 2 | Lighter, GRVT, Hyperliquid | Custom SDK/REST+WS | Production |
-| 3 | Paradex, Aster, EdgeX | REST only | Beta |
-| 4 | Variational, Nado, 01.xyz | Stub | No API |
+| 2 | Lighter, GRVT, Hyperliquid, Nado | Custom REST+WS | Production |
+| 3 | Paradex, Aster, EdgeX, Variational, 01.xyz | REST only | Beta |
 
 ## Development Commands
 ```bash
