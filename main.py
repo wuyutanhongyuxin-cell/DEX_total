@@ -81,10 +81,10 @@ COLLECTOR_MAP = {
         ws_url=cfg.get("ws_url", "wss://mainnet.lighter.xyz/ws"),
     ),
     "grvt": lambda cfg: GRVTCollector(
-        rest_url=cfg.get("rest_url", "https://edge.grvt.io"),
+        rest_url=cfg.get("rest_url", "https://trades.grvt.io"),
     ),
     "hyperliquid": lambda cfg: HyperliquidCollector(
-        rest_url=cfg.get("rest_url", "https://api.hyperliquid.xyz"),
+        rest_url=cfg.get("rest_url", "https://api.hyperliquid.xyz/info"),
         ws_url=cfg.get("ws_url", "wss://api.hyperliquid.xyz/ws"),
     ),
     "paradex": lambda cfg: ParadexCollector(

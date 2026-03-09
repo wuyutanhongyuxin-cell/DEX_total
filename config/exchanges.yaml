@@ -36,12 +36,11 @@ exchanges:
     options:
       defaultType: swap
 
-  # --- Tier 2: DEX with SDK ---
+  # --- Tier 2: DEX (public data APIs, no auth required) ---
   lighter:
     tier: 2
     type: custom
     enabled: true
-    private_key_env: LIGHTER_PRIVATE_KEY
     rest_url: https://mainnet.lighter.xyz
     ws_url: wss://mainnet.lighter.xyz/ws
 
@@ -49,42 +48,18 @@ exchanges:
     tier: 2
     type: custom
     enabled: true
-    private_key_env: GRVT_PRIVATE_KEY
-    api_key_env: GRVT_API_KEY
-    rest_url: https://edge.grvt.io
-    ws_url: wss://edge.grvt.io/ws
+    # 注意: trades.grvt.io 是公开市场数据端点 (/full/v1/*)
+    # edge.grvt.io 是账户/交易端点，本项目不使用
+    rest_url: https://trades.grvt.io
 
   hyperliquid:
     tier: 2
     type: custom
     enabled: true
-    private_key_env: HYPERLIQUID_PRIVATE_KEY
-    rest_url: https://api.hyperliquid.xyz
+    # 注意: Hyperliquid 所有 REST 调用 POST 到 /info 端点
+    rest_url: https://api.hyperliquid.xyz/info
     ws_url: wss://api.hyperliquid.xyz/ws
 
-  # --- Tier 3: DEX REST only ---
-  paradex:
-    tier: 3
-    type: rest
-    enabled: true
-    api_key_env: PARADEX_API_KEY
-    rest_url: https://api.paradex.trade/v1
-
-  aster:
-    tier: 3
-    type: rest
-    enabled: true
-    api_key_env: ASTER_API_KEY
-    rest_url: https://api.aster.finance
-
-  edgex:
-    tier: 3
-    type: rest
-    enabled: true
-    api_key_env: EDGEX_API_KEY
-    rest_url: https://api.edgex.exchange
-
-  # --- Tier 2: DEX REST + WS ---
   nado:
     tier: 2
     type: custom
@@ -93,7 +68,25 @@ exchanges:
     archive_url: https://archive.prod.nado.xyz
     ws_url: wss://gateway.prod.nado.xyz/v1/subscribe
 
-  # --- Tier 3: DEX REST only (limited API) ---
+  # --- Tier 3: DEX REST only (public, no auth required) ---
+  paradex:
+    tier: 3
+    type: rest
+    enabled: true
+    rest_url: https://api.paradex.trade/v1
+
+  aster:
+    tier: 3
+    type: rest
+    enabled: true
+    rest_url: https://api.aster.finance
+
+  edgex:
+    tier: 3
+    type: rest
+    enabled: true
+    rest_url: https://api.edgex.exchange
+
   variational:
     tier: 3
     type: rest
