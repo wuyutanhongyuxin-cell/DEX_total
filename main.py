@@ -128,6 +128,8 @@ class Orchestrator:
         self._start_time = 0.0
         self._symbols: list[str] = []
         self._heartbeat_interval = 300  # 5 min
+        self._shutdown_event = asyncio.Event()
+        self._tasks: list[asyncio.Task] = []
 
     async def start(self) -> None:
         """Initialize all components and start collection loops."""
@@ -209,6 +211,7 @@ class Orchestrator:
 
         # Start collection tasks
         tasks = []
+        # 保存 tasks 引用用于 shutdown cancel
         bbo_interval = intervals.get("orderbook", 1.0)
         trades_interval = intervals.get("trades", 5.0)
         funding_interval = intervals.get("funding", 60.0)
@@ -239,16 +242,25 @@ class Orchestrator:
         logger.info("DEX_total orchestrator running")
 
         try:
-            await asyncio.gather(*tasks)
+            self._tasks = tasks
+            await asyncio.gather(*self._tasks)
         except asyncio.CancelledError:
             logger.info("Tasks cancelled, shutting down")
 
     async def stop(self, reason: str = "manual") -> None:
-        """Graceful shutdown."""
+        """Graceful shutdown — 防止重入，确保只执行一次."""
+        if self._shutdown_event.is_set():
+            return
+        self._shutdown_event.set()
         self._running = False
         runtime_h = (time.time() - self._start_time) / 3600
 
         logger.info(f"Stopping DEX_total: {reason}")
+
+        # 先 cancel 所有 loop tasks，防止它们在 shutdown 期间继续触发操作
+        for t in self._tasks:
+            t.cancel()
+        await asyncio.gather(*self._tasks, return_exceptions=True)
 
         for name, collector in self.collectors.items():
             try:
@@ -466,6 +478,8 @@ async def main():
     loop = asyncio.get_event_loop()
 
     def shutdown_handler():
+        if orchestrator._shutdown_event.is_set():
+            return  # 已经在 shutdown，忽略后续信号
         logger.info("Shutdown signal received")
         asyncio.create_task(orchestrator.stop("signal"))
 

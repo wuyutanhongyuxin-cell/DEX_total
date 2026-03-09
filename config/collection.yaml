@@ -23,6 +23,12 @@ symbol_map:
     BTC-PERP: BTC-PERP
   edgex:
     BTC-PERP: BTC-USDC
+  nado:
+    BTC-PERP: BTC-PERP
+  variational:
+    BTC-PERP: BTC
+  o1xyz:
+    BTC-PERP: BTC-PERP
 
 # Collection intervals (seconds)
 intervals:

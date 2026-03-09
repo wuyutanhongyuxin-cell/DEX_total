@@ -173,6 +173,16 @@ def parse_nado_bbo(msg: dict) -> Optional[tuple[Decimal, Decimal]]:
     if best_bid <= 0 or best_ask <= 0:
         return None
 
+    # Nado V1 WS 可能返回 1e18 定点数 — 条件缩放
+    _ONE_E18 = Decimal("1000000000000000000")
+    _MAX_REALISTIC_PRICE = Decimal("10000000")  # 0M，任何正常价格不会超过此值
+    if best_bid > _MAX_REALISTIC_PRICE and best_ask > _MAX_REALISTIC_PRICE:
+        best_bid /= _ONE_E18
+        best_ask /= _ONE_E18
+        # 缩放后仍须为正
+        if best_bid <= 0 or best_ask <= 0:
+            return None
+
     # Reject crossed market (bid >= ask) — indicates data error
     if best_bid >= best_ask:
         return None

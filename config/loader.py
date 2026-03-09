@@ -55,6 +55,10 @@ def get_strategy_config() -> dict:
     return load_yaml("strategy.yaml")
 
 
+# 已警告过的 symbol mapping 缺失记录，避免每秒刷日志
+_symbol_mapping_warned: set[tuple[str, str]] = set()
+
+
 def get_symbol_for_exchange(exchange_name: str, normalized_symbol: str) -> str:
     """Map a normalized symbol (e.g. BTC-PERP) to exchange-specific format."""
     config = get_collection_config()
@@ -62,6 +66,9 @@ def get_symbol_for_exchange(exchange_name: str, normalized_symbol: str) -> str:
     exchange_map = symbol_map.get(exchange_name, {})
     mapped = exchange_map.get(normalized_symbol)
     if not mapped:
-        logger.warning(f"No symbol mapping for {exchange_name}:{normalized_symbol}, using raw")
+        key = (exchange_name, normalized_symbol)
+        if key not in _symbol_mapping_warned:
+            logger.warning(f"No symbol mapping for {exchange_name}:{normalized_symbol}, using raw")
+            _symbol_mapping_warned.add(key)
         return normalized_symbol
     return mapped

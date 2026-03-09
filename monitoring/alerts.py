@@ -28,6 +28,7 @@ class TelegramNotifier:
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
         self.enabled = bool(self.bot_token and self.chat_id)
         self._session: Optional[aiohttp.ClientSession] = None
+        self._closed = False  # shutdown 后禁止再发送
         if not self.enabled:
             logger.info("Telegram notifications disabled (no token/chat_id)")
 
@@ -37,15 +38,17 @@ class TelegramNotifier:
         return self._session
 
     async def _send(self, text: str) -> None:
-        if not self.enabled:
+        if not self.enabled or self._closed:
             return
+        # 去除 Markdown 特殊字符避免 parse entities 错误: 改用纯文本
+        text = text.replace("*", "").replace("_", "-")
         try:
             session = await self._get_session()
             url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
             payload = {
                 "chat_id": self.chat_id,
                 "text": text,
-                "parse_mode": "Markdown",
+                # parse_mode 已移除 — 使用纯文本避免 Markdown 转义问题
                 "disable_web_page_preview": True,
             }
             async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=SEND_TIMEOUT)) as resp:
@@ -125,5 +128,6 @@ class TelegramNotifier:
     # ─── Cleanup ─────────────────────────────────────────────
 
     async def close(self) -> None:
+        self._closed = True  # 阻止 close 后再发送
         if self._session and not self._session.closed:
             await self._session.close()

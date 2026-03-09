@@ -169,6 +169,15 @@ class SpreadAnalyzer:
                 if mid <= _ZERO:
                     continue
 
+                # 价格合理性检查: 同一资产不同交易所的价格不应偏离 50% 以上
+                _ratio_limit = Decimal("1.5")
+                buy_mid = (buy_bid + buy_ask) / _TWO
+                sell_mid = (sell_bid + sell_ask) / _TWO
+                if buy_mid > _ZERO and sell_mid > _ZERO:
+                    ratio = max(buy_mid, sell_mid) / min(buy_mid, sell_mid)
+                    if ratio > _ratio_limit:
+                        continue
+
                 spread_bps = raw_spread / mid * _BPS
                 fee_cost_bps = _TWO * self._fee_estimate_bps
                 nat_buy = max(0.0, self._avg_natural_spread(buy_ex, now=now))
