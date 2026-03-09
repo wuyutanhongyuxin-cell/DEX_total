@@ -8,7 +8,7 @@ python-dotenv>=1.0.0
 
 # DEX SDKs
 lighter-v2-python>=1.0.0
-grvt-api>=0.1.0
+# grvt-api>=0.1.0  # PyPI上不存在，代码使用aiohttp直连REST API
 # hyperliquid-python-sdk  # install from git if needed
 
 # Analysis
