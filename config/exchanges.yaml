@@ -48,9 +48,9 @@ exchanges:
     tier: 2
     type: custom
     enabled: true
-    # 注意: trades.grvt.io 是公开市场数据端点 (/full/v1/*)
-    # edge.grvt.io 是账户/交易端点，本项目不使用
-    rest_url: https://trades.grvt.io
+    # 注意: market-data.grvt.io 是公开市场数据端点 (/full/v1/*)
+    # trades.grvt.io 是认证交易端点, edge.grvt.io 是边缘节点
+    rest_url: https://market-data.grvt.io
 
   hyperliquid:
     tier: 2

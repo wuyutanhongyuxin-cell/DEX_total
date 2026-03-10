@@ -35,7 +35,7 @@ class GRVTCollector(BaseCollector):
         self,
         name: str = "grvt",
         tier: int = 2,
-        rest_url: str = "https://trades.grvt.io",
+        rest_url: str = "https://market-data.grvt.io",
     ):
         super().__init__(name=name, tier=tier)
         self._rest_url = rest_url.rstrip("/")

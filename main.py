@@ -81,7 +81,7 @@ COLLECTOR_MAP = {
         ws_url=cfg.get("ws_url", "wss://mainnet.lighter.xyz/ws"),
     ),
     "grvt": lambda cfg: GRVTCollector(
-        rest_url=cfg.get("rest_url", "https://trades.grvt.io"),
+        rest_url=cfg.get("rest_url", "https://market-data.grvt.io"),
     ),
     "hyperliquid": lambda cfg: HyperliquidCollector(
         rest_url=cfg.get("rest_url", "https://api.hyperliquid.xyz/info"),
@@ -226,9 +226,12 @@ class Orchestrator:
         tasks.append(asyncio.create_task(self._heartbeat_loop()))
         tasks.append(asyncio.create_task(self._dashboard_loop()))
 
-        # Start WS streams for Tier 2 exchanges
+        # 提前赋值 tasks，防止 shutdown 在 WS 启动期间触发时 cancel 空列表
+        self._tasks = tasks
+
+        # Start WS streams for Tier 2 exchanges (仅已连接的 collector)
         for name, collector in self.collectors.items():
-            if collector.tier <= 2:
+            if collector.tier <= 2 and collector._connected:
                 for symbol in self._symbols:
                     ex_symbol = get_symbol_for_exchange(name, symbol)
                     try:
@@ -238,11 +241,12 @@ class Orchestrator:
                         pass
                     except Exception as e:
                         logger.warning(f"WS stream failed for {name}: {e}")
+            elif collector.tier <= 2 and not collector._connected:
+                logger.info(f"Skipping WS for {name}: connect() failed")
 
         logger.info("DEX_total orchestrator running")
 
         try:
-            self._tasks = tasks
             await asyncio.gather(*self._tasks)
         except asyncio.CancelledError:
             logger.info("Tasks cancelled, shutting down")
